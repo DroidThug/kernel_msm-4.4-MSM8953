@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -81,6 +81,7 @@
 
 		qcom,gpu-qdss-stm = <0x081c0000 0x40000>; // base addr, size
 
+		qcom,tsens-name = "tsens_tz_sensor14";
 		/* Trace bus */
 		coresight-id = <300>;
 		coresight-name = "coresight-gfx";
@@ -88,13 +89,6 @@
 		coresight-outports = <0>;
 		coresight-child-list = <&funnel_in0>;
 		coresight-child-ports = <4>;
-
-		/* DRM settings */
-		qcom,gpmu-tsens = <0x00060007>;
-		qcom,lm-max-power = <5448>;
-		qcom,gpmu-firmware = "a530v3_gpmu.fw2";
-		qcom,gpmu-version = <1 0>;
-		qcom,zap-shader = "a530_zap";
 
 		clocks = <&clock_gpu clk_gpu_gx_gfx3d_clk>,
 			<&clock_gpu clk_gpu_ahb_clk>,
@@ -135,40 +129,6 @@
 		/* GDSC oxili regulators */
 		vddcx-supply = <&gdsc_gpu>;
 		vdd-supply = <&gdsc_gpu_gx>;
-
-		/* GPU Mempools */
-		qcom,gpu-mempools {
-			#address-cells= <1>;
-			#size-cells = <0>;
-			compatible = "qcom,gpu-mempools";
-
-			/* 4K Page Pool configuration */
-			qcom,gpu-mempool@0 {
-				reg = <0>;
-				qcom,mempool-page-size = <4096>;
-				qcom,mempool-reserved = <2048>;
-				qcom,mempool-allocate;
-			};
-			/* 8K Page Pool configuration */
-			qcom,gpu-mempool@1 {
-				reg = <1>;
-				qcom,mempool-page-size  = <8192>;
-				qcom,mempool-reserved = <1024>;
-				qcom,mempool-allocate;
-			};
-			/* 64K Page Pool configuration */
-			qcom,gpu-mempool@2 {
-				reg = <2>;
-				qcom,mempool-page-size  = <65536>;
-				qcom,mempool-reserved = <256>;
-			};
-			/* 1M Page Pool configuration */
-			qcom,gpu-mempool@3 {
-				reg = <3>;
-				qcom,mempool-page-size  = <1048576>;
-				qcom,mempool-reserved = <32>;
-			};
-		};
 
 		/* Power levels */
 		qcom,gpu-pwrlevels {

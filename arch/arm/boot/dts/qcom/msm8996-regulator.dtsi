@@ -11,7 +11,6 @@
  */
 
 #include <dt-bindings/interrupt-controller/arm-gic.h>
-#include <dt-bindings/spmi/spmi.h>
 
 &rpm_bus {
 	/* PM8994 S1 + S6 = 2 phase VDD_CX supply */
@@ -544,10 +543,10 @@
 	};
 
 	qcom,pm8004@5 {
-		compatible ="qcom,spmi-pmic";
-		reg = <0x5 SPMI_USID>;
-		#address-cells = <2>;
-		#size-cells = <0>;
+		spmi-slave-container;
+		reg = <0x5>;
+		#address-cells = <1>;
+		#size-cells = <1>;
 		/*
 		 * PM8004 S2 + S4 = 2 phase VDD_GFX supply when PM8004 is
 		 * present on the board.
@@ -1915,6 +1914,13 @@
 		startup-delay-us = <4000>;
 		enable-active-high;
 		gpio = <&pm8994_gpios 9 0>;
+	};
+
+	wlan_en_vreg: wlan_en_vreg {
+		compatible = "regulator-fixed";
+		regulator-name = "wlan_en_vreg";
+		enable-active-high;
+		gpio = <&pm8994_gpios 8 0>;
 	};
 
 	hl7509_en_vreg: hl7509_en_vreg {
