@@ -1,4 +1,4 @@
-/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015,2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -98,6 +98,22 @@ struct wcd9xxx_spmi_map map;
 void wcd9xxx_spmi_enable_irq(int irq)
 {
 	pr_debug("%s: irqno =%d\n", __func__, irq);
+	if ((irq >= 0) && (irq <= 7)) {
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_DIGITAL_INT_EN_CLR,
+				(0x01 << irq), 0x00);
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_DIGITAL_INT_EN_SET,
+				(0x01 << irq), (0x01 << irq));
+	}
+	if ((irq > 7) && (irq <= 15)) {
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_ANALOG_INT_EN_CLR,
+				(0x01 << (irq - 8)), 0x00);
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_ANALOG_INT_EN_SET,
+				(0x01 << (irq - 8)), (0x01 << (irq - 8)));
+	}
 
 	if (!(map.mask[BIT_BYTE(irq)] & (BYTE_BIT_MASK(irq))))
 		return;
@@ -111,6 +127,23 @@ void wcd9xxx_spmi_enable_irq(int irq)
 void wcd9xxx_spmi_disable_irq(int irq)
 {
 	pr_debug("%s: irqno =%d\n", __func__, irq);
+	if ((irq >= 0) && (irq <= 7)) {
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_DIGITAL_INT_EN_SET,
+				(0x01 << (irq)), 0x00);
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_DIGITAL_INT_EN_CLR,
+				(0x01 << irq), (0x01 << irq));
+	}
+
+	if ((irq > 7) && (irq <= 15)) {
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_ANALOG_INT_EN_SET,
+				(0x01 << (irq - 8)), 0x00);
+		snd_soc_update_bits(map.codec,
+				MSM8X16_WCD_A_ANALOG_INT_EN_CLR,
+				(0x01 << (irq - 8)), (0x01 << (irq - 8)));
+	}
 
 	if (map.mask[BIT_BYTE(irq)] & (BYTE_BIT_MASK(irq)))
 		return;
@@ -177,14 +210,9 @@ static int get_irq_bit(int linux_irq)
 	return i;
 }
 
-static int get_order_irq(int  i)
-{
-	return order[i];
-}
-
 static irqreturn_t wcd9xxx_spmi_irq_handler(int linux_irq, void *data)
 {
-	int irq, i, j;
+	int irq, i;
 	unsigned long status[NUM_IRQ_REGS] = {0};
 
 	if (unlikely(wcd9xxx_spmi_lock_sleep() == false)) {
@@ -203,16 +231,8 @@ static irqreturn_t wcd9xxx_spmi_irq_handler(int linux_irq, void *data)
 			MSM8X16_WCD_A_DIGITAL_INT_LATCHED_STS);
 		status[i] &= ~map.mask[i];
 	}
-	for (i = 0; i < MAX_NUM_IRQS; i++) {
-		j = get_order_irq(i);
-		if ((status[BIT_BYTE(j)] & BYTE_BIT_MASK(j)) &&
-			((map.handled[BIT_BYTE(j)] &
-			BYTE_BIT_MASK(j)) == 0)) {
-			map.handler[j](irq, data);
-			map.handled[BIT_BYTE(j)] |=
-					BYTE_BIT_MASK(j);
-		}
-	}
+
+	map.handler[irq](irq, data);
 	map.handled[BIT_BYTE(irq)] &= ~BYTE_BIT_MASK(irq);
 	wcd9xxx_spmi_unlock_sleep();
 
@@ -224,6 +244,7 @@ enum wcd9xxx_spmi_pm_state wcd9xxx_spmi_pm_cmpxchg(
 		enum wcd9xxx_spmi_pm_state n)
 {
 	enum wcd9xxx_spmi_pm_state old;
+
 	mutex_lock(&map.pm_lock);
 	old = map.pm_state;
 	if (old == o)
@@ -392,6 +413,7 @@ void wcd9xxx_spmi_set_dev(struct spmi_device *spmi, int i)
 int wcd9xxx_spmi_irq_init(void)
 {
 	int i = 0;
+
 	for (; i < MAX_NUM_IRQS; i++)
 		map.mask[BIT_BYTE(i)] |= BYTE_BIT_MASK(i);
 	mutex_init(&map.pm_lock);

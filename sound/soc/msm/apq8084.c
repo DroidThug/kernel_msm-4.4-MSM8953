@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -394,8 +394,9 @@ static void apq8084_liquid_route_aud_dock_dev(void)
 {
 	struct apq8084_liquid_dock_dev *dock_dev = apq8084_liquid_dock_dev;
 	struct snd_soc_dapm_context *dapm = dock_dev->dapm;
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(dapm);
 
-	mutex_lock(&dapm->codec->mutex);
+	mutex_lock(&codec->mutex);
 
 	/* Turn off external amp to turn off liquid spkr */
 	if ((apq8084_ext_spk_pamp & LO_1_SPK_AMP) &&
@@ -404,7 +405,7 @@ static void apq8084_liquid_route_aud_dock_dev(void)
 		(apq8084_ext_spk_pamp & LO_4_SPK_AMP))
 		apq8084_liquid_ext_spk_power_amp_enable(0);
 
-	mutex_unlock(&dapm->codec->mutex);
+	mutex_unlock(&codec->mutex);
 }
 
 static void apq8084_liquid_docking_irq_work(struct work_struct *work)
@@ -412,8 +413,9 @@ static void apq8084_liquid_docking_irq_work(struct work_struct *work)
 	struct apq8084_liquid_dock_dev *dock_dev =
 		container_of(work, struct apq8084_liquid_dock_dev, irq_work);
 	struct snd_soc_dapm_context *dapm = dock_dev->dapm;
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(dapm);
 
-	mutex_lock(&dapm->codec->mutex);
+	mutex_lock(&codec->mutex);
 	dock_dev->dock_plug_det =
 		gpio_get_value(dock_dev->dock_plug_gpio);
 
@@ -430,7 +432,7 @@ static void apq8084_liquid_docking_irq_work(struct work_struct *work)
 			(apq8084_ext_spk_pamp & LO_4_SPK_AMP))
 			apq8084_liquid_ext_spk_power_amp_enable(0);
 	}
-	mutex_unlock(&dapm->codec->mutex);
+	mutex_unlock(&codec->mutex);
 }
 
 static irqreturn_t apq8084_liquid_docking_irq_handler(int irq, void *dev)
@@ -591,7 +593,7 @@ static void apq8084_ext_control(struct snd_soc_codec *codec)
 {
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 
-	mutex_lock(&dapm->codec->mutex);
+	mutex_lock(&codec->mutex);
 	pr_debug("%s: apq8084_spk_control = %d", __func__, apq8084_spk_control);
 	if (apq8084_spk_control == APQ8084_SPK_ON) {
 		snd_soc_dapm_enable_pin(dapm, "Lineout_1 amp");
@@ -605,7 +607,7 @@ static void apq8084_ext_control(struct snd_soc_codec *codec)
 		snd_soc_dapm_disable_pin(dapm, "Lineout_4 amp");
 	}
 
-	mutex_unlock(&dapm->codec->mutex);
+	mutex_unlock(&codec->mutex);
 	snd_soc_dapm_sync(dapm);
 }
 
@@ -2006,7 +2008,7 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 
 static bool apq8084_swap_gnd_mic(struct snd_soc_codec *codec)
 {
-	struct snd_soc_card *card = codec->card;
+	struct snd_soc_card *card = codec->component.card;
 	struct apq8084_asoc_mach_data *pdata = snd_soc_card_get_drvdata(card);
 	int value = gpio_get_value_cansleep(pdata->us_euro_gpio);
 
@@ -3688,7 +3690,7 @@ static struct snd_soc_dai_link apq8084_common_be_dai_links[] = {
 		.codec_name     = "msm-stub-codec.1",
 		.codec_dai_name = "msm-stub-tx",
 		.no_pcm = 1,
-		.dpcm_playback = 1,
+		.dpcm_capture = 1,
 		.be_id = MSM_BACKEND_DAI_INCALL_RECORD_RX,
 		.be_hw_params_fixup = msm_be_hw_params_fixup,
 		.ignore_suspend = 1,
@@ -3702,7 +3704,7 @@ static struct snd_soc_dai_link apq8084_common_be_dai_links[] = {
 		.codec_name     = "msm-stub-codec.1",
 		.codec_dai_name = "msm-stub-rx",
 		.no_pcm = 1,
-		.dpcm_capture = 1,
+		.dpcm_playback = 1,
 		.be_id = MSM_BACKEND_DAI_VOICE_PLAYBACK_TX,
 		.be_hw_params_fixup = msm_be_hw_params_fixup,
 		.ignore_suspend = 1,
